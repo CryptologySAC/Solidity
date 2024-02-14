@@ -537,6 +537,24 @@ describe('ERC20AllowanceProtected.sol - Enforce an account to first reset a give
       })
     })
 
+    describe('An unlimited allowance from an owner account to a spender account should be updated correctly when it is reset to 0', function () {
+      it('The allowance from <owner> to <spender> is <MaxUint256> at the start, and is <0> at the end', async function () {
+        const instance: ERC20AllowanceProtectedTest = await loadFixture(
+          deployAllowanceProtected
+        )
+        const [owner, spender] = await ethers.getSigners()
+        const allowance = MaxUint256
+        await instance.connect(owner).approve(spender.address, allowance)
+        expect(
+          await instance.allowance(owner.address, spender.address)
+        ).to.be.equal(allowance)
+        await instance.approve(spender.address, 0)
+        expect(
+          await instance.allowance(owner.address, spender.address)
+        ).to.be.equal(0)
+      })
+    })
+
     describe('An allowance from an owner account to a spender account should be updated correctly when the spender account uses (part of) the allowance to transfer from the owner to the owner', function () {
       it('The allowance from <owner> to <spender> is <allowance> at the start, and is <allowance - transfer value> at the end', async function () {
         const instance: ERC20AllowanceProtectedTest = await loadFixture(
