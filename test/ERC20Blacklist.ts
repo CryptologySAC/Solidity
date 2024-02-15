@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { ethers, config } from 'hardhat'
-import { ZeroAddress, keccak256, toUtf8Bytes } from 'ethers'
+import { MaxInt256, ZeroAddress, keccak256, toUtf8Bytes } from 'ethers'
 import { loadFixture } from '@nomicfoundation/hardhat-toolbox/network-helpers'
 import { type ERC20BlacklistTest } from '../typechain-types'
 import { type HardhatNetworkHDAccountsUserConfig } from 'hardhat/types'
@@ -374,7 +374,7 @@ describe('ERC20Blacklist.sol - EManage a blacklist on an ERC20 token to prevent 
           .to.revertedWithCustomError(instance, 'BlacklistedError')
           .withArgs(
             owner.address,
-            'This address has been blacklisted and is currently not allowed to interact with this token.'
+            'This address has been blacklisted and is currently not allowed to transfer this token.'
           )
         expect(
           await instance.allowance(owner.address, spender.address)
@@ -503,7 +503,7 @@ describe('ERC20Blacklist.sol - EManage a blacklist on an ERC20 token to prevent 
           .to.be.revertedWithCustomError(instance, 'BlacklistedError')
           .withArgs(
             userAccount.address,
-            'This address has been blacklisted and is currently not allowed to interact with this token.'
+            'This address has been blacklisted and is currently not allowed to receive this token.'
           )
       })
     })
@@ -532,7 +532,7 @@ describe('ERC20Blacklist.sol - EManage a blacklist on an ERC20 token to prevent 
     })
 
     describe('TransferFrom from a blacklisted <owner>', function () {
-      it('it will revert a transfer from a blacklisted <msg.sender>', async function () {
+      it('it will revert a transfer from a blacklisted <owner>', async function () {
         const instance: ERC20BlacklistTest =
           await loadFixture(deployBlacklistTest)
         const [admin, owner, spender] = await ethers.getSigners()
@@ -547,7 +547,26 @@ describe('ERC20Blacklist.sol - EManage a blacklist on an ERC20 token to prevent 
           .to.be.revertedWithCustomError(instance, 'BlacklistedError')
           .withArgs(
             owner.address,
-            'This address has been blacklisted and is currently not allowed to interact with this token.'
+            'This address has been blacklisted and is currently not allowed to transfer this token.'
+          )
+      })
+
+      it('it will revert a transfer from a blacklisted <owner> who has approved an unlimited allowance', async function () {
+        const instance: ERC20BlacklistTest =
+          await loadFixture(deployBlacklistTest)
+        const [admin, owner, spender] = await ethers.getSigners()
+        await instance.transfer(owner.address, '200')
+        await instance.connect(owner).approve(spender, MaxInt256)
+        await instance.blacklist(owner.address)
+        await expect(
+          instance
+            .connect(spender)
+            .transferFrom(owner.address, admin.address, '50')
+        )
+          .to.be.revertedWithCustomError(instance, 'BlacklistedError')
+          .withArgs(
+            owner.address,
+            'This address has been blacklisted and is currently not allowed to transfer this token.'
           )
       })
     })
@@ -568,7 +587,7 @@ describe('ERC20Blacklist.sol - EManage a blacklist on an ERC20 token to prevent 
           .to.be.revertedWithCustomError(instance, 'BlacklistedError')
           .withArgs(
             receiver.address,
-            'This address has been blacklisted and is currently not allowed to interact with this token.'
+            'This address has been blacklisted and is currently not allowed to receive this token.'
           )
       })
     })
@@ -627,9 +646,8 @@ describe('ERC20Blacklist.sol - EManage a blacklist on an ERC20 token to prevent 
     it("reverts transfers that exceed the sender's balance", async function () {
       const instance = await loadFixture(deployBlacklistTest)
       const [sender, recipient] = await ethers.getSigners()
-      const balance = Number(await instance.balanceOf(sender.address))
-      const amount = balance + 1 // One more than the balance
-
+      const balance = await instance.balanceOf(sender.address)
+      const amount = balance + BigInt(1) // One more than the balance
       await expect(
         instance.connect(sender).transfer(recipient.address, amount)
       ).to.be.revertedWithCustomError(instance, 'ERC20InsufficientBalance')

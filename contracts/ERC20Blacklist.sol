@@ -7,26 +7,23 @@ pragma solidity ^0.8.20;
 /// @notice Manage a blacklist on an ERC20 token to prevent bad actor addresses from being able to use the token.
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@thirdweb-dev/contracts/extension/PermissionsEnumerable.sol";
 import "./IERC20Blacklist.sol";
 
 abstract contract ERC20Blacklist is
     ERC20,
-    ERC20Permit,
     PermissionsEnumerable,
     IERC20Blacklist
 {
-    bytes32 public constant BLACKLIST_ROLE = keccak256("BLACKLIST_ROLE");
     mapping(address => bool) private _blacklistedAdresses;
 
     /// @notice Add <account> to the blacklist.
-    function blacklist(address account) external onlyRole(BLACKLIST_ROLE) {
+    function blacklist(address account) public virtual {
         _blacklist(account);
     }
 
     /// @notice Remove <account> from the blacklist.
-    function unblacklist(address account) external onlyRole(BLACKLIST_ROLE) {
+    function unblacklist(address account) public virtual {
         _unblacklist(account);
     }
 
@@ -93,13 +90,14 @@ abstract contract ERC20Blacklist is
 
         /// @dev revert if <from> is blacklisted.
         /// @dev There is an edge case here where: allowance(from, spender) > 0 but <from> is now blacklisted and therefor spender can not use the allowance that was given previously.
-        /// @dev This might break expected functionality in contracts that depend on these allowances. However there is a reaon why we can not accomodate this:
+        /// @dev This might break expected functionality in contracts that depend on these allowances. However there is a reason why we can not accomodate this:
         /// @dev In case an account expects to be blacklisted it could previously approve an unlimited allowance to an other account and
         /// @dev - whilst blacklisted - empty the balance with a transferFrom().
+        /// @dev This generally reverts on _approve() which is executed before the _update(), but with an unlimited allowance it will revert here
         if (_isBlacklisted(from)) {
             revert BlacklistedError(
                 from,
-                "This address has been blacklisted and is currently not allowed to interact with this token."
+                "This address has been blacklisted and is currently not allowed to transfer this token. unlimited"
             );
         }
 
@@ -107,7 +105,7 @@ abstract contract ERC20Blacklist is
         if (_isBlacklisted(to)) {
             revert BlacklistedError(
                 to,
-                "This address has been blacklisted and is currently not allowed to interact with this token."
+                "This address has been blacklisted and is currently not allowed to receive this token."
             );
         }
 
@@ -134,7 +132,7 @@ abstract contract ERC20Blacklist is
         if (_isBlacklisted(owner)) {
             revert BlacklistedError(
                 owner,
-                "This address has been blacklisted and is currently not allowed to interact with this token."
+                "This address has been blacklisted and is currently not allowed to transfer this token."
             );
         }
 

@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es2020",
+    "strictNullChecks": true,
+    "target": "ES2022",
     "module": "commonjs",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,

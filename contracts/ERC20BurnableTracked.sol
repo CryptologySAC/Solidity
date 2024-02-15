@@ -12,8 +12,6 @@ abstract contract ERC20BurnableTracked is
     ERC20Capped,
     PermissionsEnumerable
 {
-    bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
-
     /// @notice The total amount of tokens that have been burned
     uint256 private _burned = 0;
 
@@ -28,18 +26,24 @@ abstract contract ERC20BurnableTracked is
      * - the caller must have allowance for ``accounts``'s tokens of at least
      * `value`.
      */
-    function burnFrom(address from, uint256 value) external onlyRole(BURNER_ROLE) {
-
+    function burnFrom(address from, uint256 value) public virtual {
         address spender = _msgSender();
-        _spendAllowance(from, spender, value);
+        if (spender != from) {
+            _spendAllowance(from, spender, value);
+        }
 
         unchecked {
             // we dont't need to check for overflow because the value <= to the capped tokens
             _burned += value;
         }
-        
+
         _burn(from, value);
-        emit BurnableTracked(msg.sender, "Has burned tokens from an allowance. New Token cap: ", cap());
+        uint256 _cap = cap();
+        emit BurnableTracked(
+            spender,
+            "has burned tokens from an allowance. New Token cap:",
+            _cap
+        );
     }
 
     /**

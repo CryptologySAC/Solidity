@@ -5,15 +5,14 @@
 
 pragma solidity ^0.8.20;
 
-import "../ERC20Blacklist.sol";
+import "../ERC20CryptologyToken.sol";
 
-contract ERC20BlacklistTest is ERC20Blacklist {
-    constructor()
-        ERC20("ERC20BlacklistTest", "BLACKLIST")
-        ERC20Permit("ERC20BlacklistTest")
-    {
-        _mint(msg.sender, 100000000);
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _setupRole(BLACKLIST_ROLE, msg.sender);
+contract ERC20BlacklistTest is ERC20CryptologyToken {
+    string private constant _name = "ERC20BlacklistTest";
+    string private constant _symbol = "BLACKLIST";
+    uint256 private constant _tokenCap = 20_000_000 * (10 ** 18);
+
+    constructor() ERC20CryptologyToken(_name, _symbol, _tokenCap) {
+        _mint(msg.sender, 1000 * 10 ** decimals());
     }
 }

@@ -18,11 +18,11 @@ const config: HardhatUserConfig = {
   networks: {
     zkEVM: {
       url: 'https://rpc.public.zkevm-test.net',
-      accounts: [process.env.ACCOUNT_PRIVATE_KEY!]
+      accounts: [process.env.ACCOUNT_PRIVATE_KEY ?? '']
     },
     polygonMumbai: {
       url: 'https://rpc-mumbai.polygon.technology',
-      accounts: [process.env.ACCOUNT_PRIVATE_KEY!]
+      accounts: [process.env.ACCOUNT_PRIVATE_KEY ?? '']
     }
   },
   sourcify: {
@@ -30,8 +30,8 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: {
-      polygonMumbai: process.env.POLYGONSCAN_API_KEY!,
-      zkEVM: process.env.ZKEVM_API_KEY!
+      polygonMumbai: process.env.POLYGONSCAN_API_KEY ?? '',
+      zkEVM: process.env.ZKEVM_API_KEY ?? ''
     },
     customChains: [
       {
