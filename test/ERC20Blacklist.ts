@@ -486,7 +486,7 @@ describe('ERC20Blacklist.sol - EManage a blacklist on an ERC20 token to prevent 
           .to.be.revertedWithCustomError(instance, 'BlacklistedError')
           .withArgs(
             userAccount.address,
-            'Your address has been blacklisted and is currently not allowed to interact with this token.'
+            'This address has been blacklisted and is currently not allowed to transfer this token.'
           )
       })
     })
@@ -572,12 +572,33 @@ describe('ERC20Blacklist.sol - EManage a blacklist on an ERC20 token to prevent 
     })
 
     describe('TransferFrom to a blacklisted <receiver>', function () {
-      it('it will revert a transfer from a blacklisted <msg.sender>', async function () {
+      it('it will revert a transfer to a blacklisted <receiver>', async function () {
         const instance: ERC20BlacklistTest =
           await loadFixture(deployBlacklistTest)
         const [admin, owner, spender, receiver] = await ethers.getSigners()
         await instance.connect(admin).transfer(owner.address, '200')
         await instance.connect(owner).approve(spender, 50)
+        await instance.blacklist(receiver.address)
+        await expect(
+          instance
+            .connect(spender)
+            .transferFrom(owner.address, receiver.address, '50')
+        )
+          .to.be.revertedWithCustomError(instance, 'BlacklistedError')
+          .withArgs(
+            receiver.address,
+            'This address has been blacklisted and is currently not allowed to receive this token.'
+          )
+      })
+    })
+
+    describe('TransferFrom to a blacklisted <receiver>', function () {
+      it('it will revert a transfer to a blacklisted <receiver> while <spender> has an unlimited allowance', async function () {
+        const instance: ERC20BlacklistTest =
+          await loadFixture(deployBlacklistTest)
+        const [admin, owner, spender, receiver] = await ethers.getSigners()
+        await instance.connect(admin).transfer(owner.address, '200')
+        await instance.connect(owner).approve(spender, MaxInt256)
         await instance.blacklist(receiver.address)
         await expect(
           instance

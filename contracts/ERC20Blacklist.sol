@@ -80,24 +80,13 @@ abstract contract ERC20Blacklist is
         address to,
         uint256 value
     ) internal virtual override(ERC20) {
-        /// @dev revert if <msg.sender> is blacklisted.
-        if (_isBlacklisted(msg.sender)) {
+        /// @notice revert if <msg.sender> or <from> is blacklisted.
+        /// @dev it should never reach the _isBlacklisted(msg.sender) check, because in case <from> is not <msg.sender> it should be reverting in _approve before we even get here.
+        /// @dev The statement is kept in however in case an edge case is overlooked.
+        if (_isBlacklisted(from) || _isBlacklisted(msg.sender)) {
             revert BlacklistedError(
                 msg.sender,
-                "Your address has been blacklisted and is currently not allowed to interact with this token."
-            );
-        }
-
-        /// @dev revert if <from> is blacklisted.
-        /// @dev There is an edge case here where: allowance(from, spender) > 0 but <from> is now blacklisted and therefor spender can not use the allowance that was given previously.
-        /// @dev This might break expected functionality in contracts that depend on these allowances. However there is a reason why we can not accomodate this:
-        /// @dev In case an account expects to be blacklisted it could previously approve an unlimited allowance to an other account and
-        /// @dev - whilst blacklisted - empty the balance with a transferFrom().
-        /// @dev This generally reverts on _approve() which is executed before the _update(), but with an unlimited allowance it will revert here
-        if (_isBlacklisted(from)) {
-            revert BlacklistedError(
-                from,
-                "This address has been blacklisted and is currently not allowed to transfer this token. unlimited"
+                "This address has been blacklisted and is currently not allowed to transfer this token."
             );
         }
 
@@ -129,6 +118,10 @@ abstract contract ERC20Blacklist is
         }
 
         /// @dev revert if <owner> is blacklisted; when using EIP-2612 Signature permit() the owner will differ from <msg.sender>._approve
+        /// @dev There is an edge case here where: allowance(owner, spender) > 0 but <owner> is now blacklisted and <spender> can not use the allowance that was given previously.
+        /// @dev This might break expected functionality in contracts that depend on these allowances. However there is a reason why we can not accomodate this:
+        /// @dev In case an account expects to be blacklisted it could previously approve an unlimited allowance to an other account and
+        /// @dev - whilst blacklisted - empty the balance with a transferFrom().
         if (_isBlacklisted(owner)) {
             revert BlacklistedError(
                 owner,
