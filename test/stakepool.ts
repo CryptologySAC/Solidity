@@ -17,8 +17,10 @@ describe('ERC20StakingPool.sol', async function () {
   const PAUSER_ROLE = keccak256(toUtf8Bytes('PAUSER_ROLE'))
   const STAKEPOOL_ROLE = keccak256(toUtf8Bytes('STAKEPOOL_ROLE'))
 
-  const instance: ERC20CryptologyToken = await ethers.deployContract(
+  const tokenInstance: ERC20CryptologyToken = await ethers.deployContract(
     'ERC20CryptologyTokenTest',
     [PROJECT_NAME, PROJECT_SYMBOL, MAX_CAPPED_TOKENS]
   )
+
+    
 })
