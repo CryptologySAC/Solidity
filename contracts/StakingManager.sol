@@ -8,7 +8,4 @@ pragma solidity ^0.8.20;
 import "./IStakingManager.sol";
 import "@thirdweb-dev/contracts/extension/PermissionsEnumerable.sol";
 
-
-contract StakingManager is IStakingManager, PermissionsEnumerable {
-
-}
+abstract contract StakingManager is IStakingManager, PermissionsEnumerable {}
