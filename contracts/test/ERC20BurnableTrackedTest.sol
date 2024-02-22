@@ -5,14 +5,14 @@
 
 pragma solidity ^0.8.20;
 
-import "../ERC20CryptologyToken.sol";
+import '../ERC20CryptologyToken.sol';
 
 contract ERC20BurnableTrackedTest is ERC20CryptologyToken {
-    string private constant _name = "ERC20BurnableTrackedTest";
-    string private constant _symbol = "BURNABLE";
-    uint256 private constant _tokenCap = 20_000_000 * (10 ** 18);
+	string private constant _name = 'ERC20BurnableTrackedTest';
+	string private constant _symbol = 'BURNABLE';
+	uint256 private constant _tokenCap = 20_000_000 * (10 ** 18);
 
-    constructor() ERC20CryptologyToken(_name, _symbol, _tokenCap) {
-        _mint(msg.sender, _tokenCap);
-    }
+	constructor() ERC20CryptologyToken(_name, _symbol, _tokenCap) {
+		_mint(msg.sender, _tokenCap);
+	}
 }

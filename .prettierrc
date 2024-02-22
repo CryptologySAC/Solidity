@@ -3,6 +3,9 @@
   "trailingComma": "none",
   "arrowParens": "avoid",
   "singleQuote": true,
+  "useTabs": true,
+  "bracketSpacing": false,
+  "tabWidth": 4,
   "printWidth": 80,
   "plugins": ["prettier-plugin-solidity"],
   "overrides": [
@@ -12,8 +15,8 @@
         "parser": "solidity-parse",
         "printWidth": 80,
         "tabWidth": 4,
-        "useTabs": false,
-        "singleQuote": false,
+        "useTabs": true,
+        "singleQuote": true,
         "bracketSpacing": false,
         "compiler": "0.8.20"
       }
