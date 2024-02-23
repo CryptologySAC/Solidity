@@ -248,14 +248,15 @@ contract ERC20StakingPool is
 		uint256 startMonth = _stakePoolOpenMonths();
 
 		// Determine the applicable APY based on duration and start month
-		if (startMonth <= 24) {
+		if (startMonth < 24) {
 			annualYieldPercentage = apyByDurationAndMonth[_duration][24];
-		} else if (startMonth <= 48) {
+		} else if (startMonth < 48) {
 			annualYieldPercentage = apyByDurationAndMonth[_duration][48];
-		} else if (startMonth <= 60) {
+		} else if (startMonth < 60) {
 			annualYieldPercentage = apyByDurationAndMonth[_duration][60];
 		} else {
-			revert StakingPoolClosedError('The stakepool has ended.');
+			/// @dev It should never reach this part because it will revert on a closed pool, keep this in for missed edge cases
+			revert StakingPoolClosedError('The stakepool is not open.');
 		}
 
 		// Since rewards are calculated and minted at the moment of staking,
@@ -269,7 +270,7 @@ contract ERC20StakingPool is
 	function createStake(uint256 _amount, uint8 _tier) external nonReentrant {
 		// Only able to stake while the pool is open
 		if (!_isStakePoolOpen()) {
-			revert StakingPoolClosedError('The stakepool is not open');
+			revert StakingPoolClosedError('The stakepool is not open.');
 		}
 
 		// check if stake is at least the minimal amount
@@ -354,7 +355,9 @@ contract ERC20StakingPool is
 		Stake storage stake = userStakes[msg.sender][_stakeID];
 
 		// Check if the stake exists and is not the default empty stake
-		require(stake.amount > 0, 'Stake does not exist or already unstaked');
+		if (stake.amount == 0) {
+			revert StakeClaimError(stake);
+		}
 
 		// check if stake is still locked
 		if (
@@ -386,13 +389,29 @@ contract ERC20StakingPool is
 	function getAllStakesForUser(
 		address account
 	) external view returns (Stake[] memory) {
-		uint256[] memory stakeIDs = userStakeIDs[account];
-		Stake[] memory stakes = new Stake[](stakeIDs.length);
+		return _getAllStakesForUser(account);
+	}
 
-		/// @dev only return stakes that are not unstaked yet
+	function _getAllStakesForUser(
+		address account
+	) internal view returns (Stake[] memory) {
+		uint256[] memory stakeIDs = userStakeIDs[account];
+
+		/// Create a Stake[] with the size of all non claimed stakes;
+		uint256 y = 0;
 		for (uint256 i = 0; i < stakeIDs.length; i++) {
 			if (userStakes[account][stakeIDs[i]].amount > 0) {
-				stakes[i] = userStakes[account][stakeIDs[i]];
+				y++;
+			}
+		}
+		Stake[] memory stakes = new Stake[](y);
+
+		/// @dev only return stakes that are not unstaked yet
+		y = 0;
+		for (uint256 i = 0; i < stakeIDs.length; i++) {
+			if (userStakes[account][stakeIDs[i]].amount > 0) {
+				stakes[y] = userStakes[account][stakeIDs[i]];
+				y++;
 			}
 		}
 

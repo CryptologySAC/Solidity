@@ -13,7 +13,7 @@ import {
 } from '../typechain-types'
 import {type HardhatNetworkHDAccountsUserConfig} from 'hardhat/types'
 import {anyValue} from '@nomicfoundation/hardhat-chai-matchers/withArgs'
-import BigNumber from "bignumber.js";
+import BigNumber from 'bignumber.js'
 
 describe('ERC20StakingPool.sol', function () {
 	const PROJECT_NAME = 'ERC20Cryptology'
@@ -23,21 +23,21 @@ describe('ERC20StakingPool.sol', function () {
 	const MIN_STAKE_AMOUNT = '1000000000000000000000'
 	const MAX_STAKE_AMOUNT = '200000000000000000000000'
 	const MIN_STAKE_REWARDS_SILVER_24 = '12500000000000000000'
-	const MIN_STAKE_REWARDS_SILVER_48 = '12500000000000000000'
-	const MIN_STAKE_REWARDS_SILVER_60 = '12500000000000000000'
+	const MIN_STAKE_REWARDS_SILVER_48 = '10000000000000000000'
+	const MIN_STAKE_REWARDS_SILVER_60 = '7500000000000000000'
 	const MIN_STAKE_REWARDS_GOLD_24 = '35000000000000000000'
-	const MIN_STAKE_REWARDS_GOLD_48 = '12500000000000000000'
-	const MIN_STAKE_REWARDS_GOLD_60 = '12500000000000000000'
+	const MIN_STAKE_REWARDS_GOLD_48 = '30000000000000000000'
+	const MIN_STAKE_REWARDS_GOLD_60 = '25000000000000000000'
 	const MIN_STAKE_REWARDS_PLATINUM_24 = '90000000000000000000'
-	const MIN_STAKE_REWARDS_PLATINUM_48 = '12500000000000000000'
-	const MIN_STAKE_REWARDS_PLATINUM_60 = '12500000000000000000'
+	const MIN_STAKE_REWARDS_PLATINUM_48 = '80000000000000000000'
+	const MIN_STAKE_REWARDS_PLATINUM_60 = '70000000000000000000'
 	const TIER_SILVER = 0
 	const TIER_GOLD = 1
 	const TIER_PLATINUM = 2
 	const THREE_MONTHS = 3
 	const SIX_MONTHS = 6
 	const TWELVE_MONTHS = 12
-    const AVG_SECONDS_PER_MONTH = new BigNumber(2630016); // 30.44 * 24 * 60 * 60
+	const AVG_SECONDS_PER_MONTH = new BigNumber(2630016) // 30.44 * 24 * 60 * 60
 
 	const PROJECT_DECIMALS = 18
 	const DEFAULT_ADMIN_ROLE =
@@ -259,7 +259,7 @@ describe('ERC20StakingPool.sol', function () {
 					stakingPoolInstance,
 					'StakingPoolClosedError'
 				)
-				.withArgs('The stakepool is not open')
+				.withArgs('The stakepool is not open.')
 		})
 
 		it('it should revert if the amount is less than 1000', async function () {
@@ -524,6 +524,17 @@ describe('ERC20StakingPool.sol', function () {
 			const {stakingPoolInstance, tokenInstance} =
 				await loadFixture(deployStakingPool)
 
+			const initialTimestamp = (await time.latest()) + 1
+			const MONTH_24: number = AVG_SECONDS_PER_MONTH.times(24)
+				.plus(initialTimestamp)
+				.toNumber()
+			const MONTH_48 = AVG_SECONDS_PER_MONTH.times(48)
+				.plus(initialTimestamp)
+				.toNumber()
+			const MONTH_60 = AVG_SECONDS_PER_MONTH.times(60)
+				.plus(initialTimestamp)
+				.toNumber()
+
 			await stakingPoolInstance.openStakePool(0)
 
 			await tokenInstance
@@ -574,8 +585,145 @@ describe('ERC20StakingPool.sol', function () {
 					MIN_STAKE_AMOUNT,
 					MIN_STAKE_REWARDS_PLATINUM_24
 				)
-			const initialTimestamp = await time.latest()
-            
+
+			// go forward in time to month 24+: lower start interest by 1%
+			await time.increaseTo(MONTH_24)
+			expect(await stakingPoolInstance.stakePoolOpenMonths()).to.eq(24)
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_SILVER)
+			)
+				.to.emit(stakingPoolInstance, 'StakeCreated')
+				.withArgs(
+					accounts[1].address,
+					anyValue,
+					anyValue,
+					THREE_MONTHS,
+					MIN_STAKE_AMOUNT,
+					MIN_STAKE_REWARDS_SILVER_48
+				)
+
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_GOLD)
+			)
+				.to.emit(stakingPoolInstance, 'StakeCreated')
+				.withArgs(
+					accounts[1].address,
+					anyValue,
+					anyValue,
+					SIX_MONTHS,
+					MIN_STAKE_AMOUNT,
+					MIN_STAKE_REWARDS_GOLD_48
+				)
+
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_PLATINUM)
+			)
+				.to.emit(stakingPoolInstance, 'StakeCreated')
+				.withArgs(
+					accounts[1].address,
+					anyValue,
+					anyValue,
+					TWELVE_MONTHS,
+					MIN_STAKE_AMOUNT,
+					MIN_STAKE_REWARDS_PLATINUM_48
+				)
+
+			// go forward in time to month 48+: lower start interest by 2%
+			await time.increaseTo(MONTH_48)
+			expect(await stakingPoolInstance.stakePoolOpenMonths()).to.eq(48)
+
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_SILVER)
+			)
+				.to.emit(stakingPoolInstance, 'StakeCreated')
+				.withArgs(
+					accounts[1].address,
+					anyValue,
+					anyValue,
+					THREE_MONTHS,
+					MIN_STAKE_AMOUNT,
+					MIN_STAKE_REWARDS_SILVER_60
+				)
+
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_GOLD)
+			)
+				.to.emit(stakingPoolInstance, 'StakeCreated')
+				.withArgs(
+					accounts[1].address,
+					anyValue,
+					anyValue,
+					SIX_MONTHS,
+					MIN_STAKE_AMOUNT,
+					MIN_STAKE_REWARDS_GOLD_60
+				)
+
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_PLATINUM)
+			)
+				.to.emit(stakingPoolInstance, 'StakeCreated')
+				.withArgs(
+					accounts[1].address,
+					anyValue,
+					anyValue,
+					TWELVE_MONTHS,
+					MIN_STAKE_AMOUNT,
+					MIN_STAKE_REWARDS_PLATINUM_60
+				)
+
+			// go forward in time to month 60+: Pool closed
+			await time.increaseTo(MONTH_60)
+			await expect(stakingPoolInstance.stakePoolOpenMonths())
+				.to.revertedWithCustomError(
+					stakingPoolInstance,
+					'StakingPoolClosedError'
+				)
+				.withArgs('The stakepool is closed.')
+
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_SILVER)
+			)
+				.to.revertedWithCustomError(
+					stakingPoolInstance,
+					'StakingPoolClosedError'
+				)
+				.withArgs('The stakepool is not open.')
+
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_GOLD)
+			)
+				.to.revertedWithCustomError(
+					stakingPoolInstance,
+					'StakingPoolClosedError'
+				)
+				.withArgs('The stakepool is not open.')
+
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_PLATINUM)
+			)
+				.to.revertedWithCustomError(
+					stakingPoolInstance,
+					'StakingPoolClosedError'
+				)
+				.withArgs('The stakepool is not open.')
 		})
 
 		it('it should generate an stake correctly', async function () {
@@ -605,31 +753,278 @@ describe('ERC20StakingPool.sol', function () {
 				)
 		})
 
-		it('it should update the stake amount totals correctly', async function () {})
-
-		it('it should mint the reward amount correctly', async function () {})
-
-		/** 
-        it('it should have setup contract correctly with a token', async function () {
+		it('it should update the stake amount totals correctly', async function () {
 			const accounts = await ethers.getSigners()
 			const {stakingPoolInstance, tokenInstance} =
 				await loadFixture(deployStakingPool)
-			await time.setNextBlockTimestamp(1800000000)
-			expect(await time.latest()).to.equal(1800000000)
-			expect(await tokenInstance.totalSupply()).to.equal(
-				HALF_CAPPED_TOKENS
-			)
-			//expect(await tokenInstance.getAddress()).to.equal(await stakingPoolInstance.token.getAddress())
+
 			await stakingPoolInstance.openStakePool(0)
+
 			await tokenInstance
 				.connect(accounts[1])
 				.approve(stakingPoolInstance.getAddress(), MaxUint256)
+
 			await expect(
 				stakingPoolInstance
 					.connect(accounts[1])
 					.createStake(MIN_STAKE_AMOUNT, TIER_SILVER)
 			).to.emit(stakingPoolInstance, 'StakeCreated')
+
+			expect(await stakingPoolInstance.getTotalStakedPool()).to.eq(
+				MIN_STAKE_AMOUNT
+			)
+
+			expect(
+				await stakingPoolInstance.getTotalStakedAccount(
+					accounts[1].address
+				)
+			).to.eq(MIN_STAKE_AMOUNT)
 		})
-        */
+
+		it('it should mint the reward amount correctly', async function () {
+			const accounts = await ethers.getSigners()
+			const {stakingPoolInstance, tokenInstance} =
+				await loadFixture(deployStakingPool)
+
+			await stakingPoolInstance.openStakePool(0)
+
+			await tokenInstance
+				.connect(accounts[1])
+				.approve(stakingPoolInstance.getAddress(), MaxUint256)
+
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_SILVER)
+			).to.emit(stakingPoolInstance, 'StakeCreated')
+
+			const EXPECTED_BALANCE =
+				BigInt(MIN_STAKE_AMOUNT) + BigInt(MIN_STAKE_REWARDS_SILVER_24)
+
+			expect(
+				await tokenInstance.balanceOf(
+					await stakingPoolInstance.getAddress()
+				)
+			).to.eq(EXPECTED_BALANCE)
+		})
+
+		it('it should revert if it can not mint the reward amount', async function () {})
 	})
+
+	describe('getAllStakesForUser()', function () {
+		it('it should return empty array when there are no stakes', async function () {
+			const accounts = await ethers.getSigners()
+			const {stakingPoolInstance, tokenInstance} =
+				await loadFixture(deployStakingPool)
+
+			await stakingPoolInstance.openStakePool(0)
+
+			await tokenInstance
+				.connect(accounts[1])
+				.approve(stakingPoolInstance.getAddress(), MaxUint256)
+
+			const stakes = await stakingPoolInstance.getAllStakesForUser(
+				accounts[1].address
+			)
+			expect(stakes.length).to.eq(0)
+		})
+
+		it('it should return array with 1 entry when there is one stake', async function () {
+			const accounts = await ethers.getSigners()
+			const {stakingPoolInstance, tokenInstance} =
+				await loadFixture(deployStakingPool)
+
+			await stakingPoolInstance.openStakePool(0)
+
+			await tokenInstance
+				.connect(accounts[1])
+				.approve(stakingPoolInstance.getAddress(), MaxUint256)
+
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_SILVER)
+			).to.emit(stakingPoolInstance, 'StakeCreated')
+
+			const stakes = await stakingPoolInstance.getAllStakesForUser(
+				accounts[1].address
+			)
+			expect(stakes.length).to.eq(1)
+		})
+
+		it('it should return array with x entries when there are x stakes', async function () {
+			const accounts = await ethers.getSigners()
+			const {stakingPoolInstance, tokenInstance} =
+				await loadFixture(deployStakingPool)
+
+			await stakingPoolInstance.openStakePool(0)
+
+			await tokenInstance
+				.connect(accounts[1])
+				.approve(stakingPoolInstance.getAddress(), MaxUint256)
+
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_SILVER)
+			).to.emit(stakingPoolInstance, 'StakeCreated')
+
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_SILVER)
+			).to.emit(stakingPoolInstance, 'StakeCreated')
+
+			const stakes = await stakingPoolInstance.getAllStakesForUser(
+				accounts[1].address
+			)
+			expect(stakes.length).to.eq(2)
+			// stakes.forEach(element => {
+			//	console.log(`stakes: ${element[0]}`)
+			// })
+		})
+
+		it('it should return an empty array when requesting for the zero address', async function () {
+			const accounts = await ethers.getSigners()
+			const {stakingPoolInstance, tokenInstance} =
+				await loadFixture(deployStakingPool)
+
+			await stakingPoolInstance.openStakePool(0)
+
+			await tokenInstance
+				.connect(accounts[1])
+				.approve(stakingPoolInstance.getAddress(), MaxUint256)
+
+			const stakes =
+				await stakingPoolInstance.getAllStakesForUser(ZeroAddress)
+			expect(stakes.length).to.eq(0)
+		})
+
+		it('it should return an empty array when requesting for the contract address', async function () {
+			const accounts = await ethers.getSigners()
+			const {stakingPoolInstance, tokenInstance} =
+				await loadFixture(deployStakingPool)
+
+			await stakingPoolInstance.openStakePool(0)
+
+			await tokenInstance
+				.connect(accounts[1])
+				.approve(stakingPoolInstance.getAddress(), MaxUint256)
+
+			const stakes = await stakingPoolInstance.getAllStakesForUser(
+				await stakingPoolInstance.getAddress()
+			)
+			expect(stakes.length).to.eq(0)
+		})
+
+		it('should show the correct amount if the pool is closed', async function () {
+			const accounts = await ethers.getSigners()
+			const {stakingPoolInstance, tokenInstance} =
+				await loadFixture(deployStakingPool)
+
+			await stakingPoolInstance.openStakePool(0)
+
+			await tokenInstance
+				.connect(accounts[1])
+				.approve(stakingPoolInstance.getAddress(), MaxUint256)
+
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_SILVER)
+			).to.emit(stakingPoolInstance, 'StakeCreated')
+
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_SILVER)
+			).to.emit(stakingPoolInstance, 'StakeCreated')
+
+			const initialTimestamp = (await time.latest()) + 1
+			const MONTH_60: number = AVG_SECONDS_PER_MONTH.times(60)
+				.plus(initialTimestamp)
+				.toNumber()
+			await time.increaseTo(MONTH_60)
+			expect(await stakingPoolInstance.isStakePoolOpen()).to.eq(false)
+			const stakes = await stakingPoolInstance.getAllStakesForUser(
+				accounts[1].address
+			)
+			expect(stakes.length).to.eq(2)
+		})
+
+		it('should show only stakes that have not been claimed yet', async function () {
+			const accounts = await ethers.getSigners()
+			const {stakingPoolInstance, tokenInstance} =
+				await loadFixture(deployStakingPool)
+
+			await stakingPoolInstance.openStakePool(0)
+
+			await tokenInstance
+				.connect(accounts[1])
+				.approve(stakingPoolInstance.getAddress(), MaxUint256)
+
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_SILVER)
+			).to.emit(stakingPoolInstance, 'StakeCreated')
+
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_SILVER)
+			).to.emit(stakingPoolInstance, 'StakeCreated')
+
+			const initialTimestamp = (await time.latest()) + 1
+			const MONTH_60: number = AVG_SECONDS_PER_MONTH.times(60)
+				.plus(initialTimestamp)
+				.toNumber()
+			await time.increaseTo(MONTH_60)
+			expect(await stakingPoolInstance.isStakePoolOpen()).to.eq(false)
+
+			const stakes = await stakingPoolInstance.getAllStakesForUser(
+				accounts[1].address
+			)
+
+			const stakeID = `${stakes[0][0]}`
+			await expect(
+				stakingPoolInstance.connect(accounts[1]).unstake(stakeID)
+			)
+				.to.emit(stakingPoolInstance, 'UnstakeEvent')
+				.withArgs(accounts[1].address, stakeID)
+
+			const stakesAfterRemove =
+				await stakingPoolInstance.getAllStakesForUser(
+					accounts[1].address
+				)
+			expect(stakes.length).to.eq(2)
+			expect(stakesAfterRemove.length).to.eq(1)
+		})
+	})
+
+	describe('unstake()', function () {
+        it('it should revert if the stake was already claimed or does not exist', async function () {
+
+        })
+
+        it('it should revert if the stake is not for the <msg.sender>', async function () {
+            
+        })
+
+        it('it should revert if the stake is not claimable yet', async function () {
+            
+        })
+
+        it('it should correctly update the total staked amounts', async function () {
+            
+        })
+
+        it('it should delete the stake', async function () {
+            
+        })
+
+        it('it should correctly transfer the staked amount + rewards to the <msg.sender>', async function () {
+            
+        })
+    })
 })
