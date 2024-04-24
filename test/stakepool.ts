@@ -1003,28 +1003,254 @@ describe('ERC20StakingPool.sol', function () {
 	})
 
 	describe('unstake()', function () {
-        it('it should revert if the stake was already claimed or does not exist', async function () {
+		it('it should revert if the stake was already claimed or does not exist', async function () {
+			const accounts = await ethers.getSigners()
+			const {stakingPoolInstance, tokenInstance} =
+				await loadFixture(deployStakingPool)
 
-        })
+			await stakingPoolInstance.openStakePool(0)
 
-        it('it should revert if the stake is not for the <msg.sender>', async function () {
-            
-        })
+			await tokenInstance
+				.connect(accounts[1])
+				.approve(stakingPoolInstance.getAddress(), MaxUint256)
 
-        it('it should revert if the stake is not claimable yet', async function () {
-            
-        })
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_SILVER)
+			).to.emit(stakingPoolInstance, 'StakeCreated')
 
-        it('it should correctly update the total staked amounts', async function () {
-            
-        })
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_SILVER)
+			).to.emit(stakingPoolInstance, 'StakeCreated')
 
-        it('it should delete the stake', async function () {
-            
-        })
+			const initialTimestamp = (await time.latest()) + 1
+			const MONTH_60: number = AVG_SECONDS_PER_MONTH.times(60)
+				.plus(initialTimestamp)
+				.toNumber()
+			await time.increaseTo(MONTH_60)
+			expect(await stakingPoolInstance.isStakePoolOpen()).to.eq(false)
 
-        it('it should correctly transfer the staked amount + rewards to the <msg.sender>', async function () {
-            
-        })
-    })
+			const stakes = await stakingPoolInstance.getAllStakesForUser(
+				accounts[1].address
+			)
+
+			const stakeID = `${stakes[0][0]}`
+			await expect(
+				stakingPoolInstance.connect(accounts[1]).unstake(stakeID)
+			)
+				.to.emit(stakingPoolInstance, 'UnstakeEvent')
+				.withArgs(accounts[1].address, stakeID)
+
+			const stakesAfterRemove =
+				await stakingPoolInstance.getAllStakesForUser(
+					accounts[1].address
+				)
+			expect(stakes.length).to.eq(2)
+			expect(stakesAfterRemove.length).to.eq(1)
+
+			await expect(
+				stakingPoolInstance.connect(accounts[1]).unstake(stakeID)
+			).to.revertedWithCustomError(stakingPoolInstance, 'StakeClaimError')
+		})
+
+		it('it should revert if the stake is not for the <msg.sender>', async function () {
+			const accounts = await ethers.getSigners()
+			const {stakingPoolInstance, tokenInstance} =
+				await loadFixture(deployStakingPool)
+
+			await stakingPoolInstance.openStakePool(0)
+
+			await tokenInstance
+				.connect(accounts[1])
+				.approve(stakingPoolInstance.getAddress(), MaxUint256)
+
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_SILVER)
+			).to.emit(stakingPoolInstance, 'StakeCreated')
+
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_SILVER)
+			).to.emit(stakingPoolInstance, 'StakeCreated')
+
+			const initialTimestamp = (await time.latest()) + 1
+			const MONTH_60: number = AVG_SECONDS_PER_MONTH.times(60)
+				.plus(initialTimestamp)
+				.toNumber()
+			await time.increaseTo(MONTH_60)
+			expect(await stakingPoolInstance.isStakePoolOpen()).to.eq(false)
+
+			const stakes = await stakingPoolInstance.getAllStakesForUser(
+				accounts[1].address
+			)
+
+			const stakeID = `${stakes[0][0]}`
+
+			await expect(
+				stakingPoolInstance.connect(accounts[2]).unstake(stakeID)
+			).to.revertedWithCustomError(stakingPoolInstance, 'StakeClaimError')
+		})
+
+		it('it should revert if the stake is not claimable yet', async function () {
+			const accounts = await ethers.getSigners()
+			const {stakingPoolInstance, tokenInstance} =
+				await loadFixture(deployStakingPool)
+
+			await stakingPoolInstance.openStakePool(0)
+
+			await tokenInstance
+				.connect(accounts[1])
+				.approve(stakingPoolInstance.getAddress(), MaxUint256)
+
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_SILVER)
+			).to.emit(stakingPoolInstance, 'StakeCreated')
+
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_SILVER)
+			).to.emit(stakingPoolInstance, 'StakeCreated')
+
+			const stakes = await stakingPoolInstance.getAllStakesForUser(
+				accounts[1].address
+			)
+
+			const stakeID = `${stakes[0][0]}`
+
+			await expect(
+				stakingPoolInstance.connect(accounts[1]).unstake(stakeID)
+			)
+				.to.revertedWithCustomError(
+					stakingPoolInstance,
+					'StakeTimeLockedError'
+				)
+				.withArgs('This stake is still locked', anyValue, THREE_MONTHS)
+		})
+
+		it('it should correctly update the total staked amounts', async function () {
+			const accounts = await ethers.getSigners()
+			const {stakingPoolInstance, tokenInstance} =
+				await loadFixture(deployStakingPool)
+
+			await stakingPoolInstance.openStakePool(0)
+
+			await tokenInstance
+				.connect(accounts[1])
+				.approve(stakingPoolInstance.getAddress(), MaxUint256)
+
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_SILVER)
+			).to.emit(stakingPoolInstance, 'StakeCreated')
+
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MIN_STAKE_AMOUNT, TIER_SILVER)
+			).to.emit(stakingPoolInstance, 'StakeCreated')
+
+			const initialTimestamp = (await time.latest()) + 1
+			const MONTH_60: number = AVG_SECONDS_PER_MONTH.times(60)
+				.plus(initialTimestamp)
+				.toNumber()
+			await time.increaseTo(MONTH_60)
+			expect(await stakingPoolInstance.isStakePoolOpen()).to.eq(false)
+
+			const stakes = await stakingPoolInstance.getAllStakesForUser(
+				accounts[1].address
+			)
+
+			const stakeID = `${stakes[0][0]}`
+
+			await expect(
+				stakingPoolInstance.connect(accounts[1]).unstake(stakeID)
+			)
+				.to.emit(stakingPoolInstance, 'UnstakeEvent')
+				.withArgs(accounts[1].address, stakeID)
+
+			const stakesAfterRemove =
+				await stakingPoolInstance.getAllStakesForUser(
+					accounts[1].address
+				)
+			expect(stakes.length).to.eq(2)
+			expect(stakesAfterRemove.length).to.eq(1)
+		})
+
+		it('it should correctly transfer the staked amount + rewards to the <msg.sender>', async function () {
+			const accounts = await ethers.getSigners()
+			const {stakingPoolInstance, tokenInstance} =
+				await loadFixture(deployStakingPool)
+
+			await stakingPoolInstance.openStakePool(0)
+
+			await tokenInstance
+				.connect(accounts[1])
+				.approve(stakingPoolInstance.getAddress(), MaxUint256)
+
+			await expect(
+				stakingPoolInstance
+					.connect(accounts[1])
+					.createStake(MAX_STAKE_AMOUNT, TIER_SILVER)
+			).to.emit(stakingPoolInstance, 'StakeCreated')
+
+			const initialTimestamp = (await time.latest()) + 1
+			const MONTH_60: number = AVG_SECONDS_PER_MONTH.times(60)
+				.plus(initialTimestamp)
+				.toNumber()
+			await time.increaseTo(MONTH_60)
+			expect(await stakingPoolInstance.isStakePoolOpen()).to.eq(false)
+
+			const stakes = await stakingPoolInstance.getAllStakesForUser(
+				accounts[1].address
+			)
+
+			const balance = await tokenInstance.balanceOf(accounts[1].address)
+
+			const stakeID = `${stakes[0][0]}`
+
+			expect(
+				await stakingPoolInstance.getTotalStakedAccount(
+					accounts[1].address
+				)
+			).to.eq(MAX_STAKE_AMOUNT)
+
+			expect(await stakingPoolInstance.getTotalStakedPool()).to.eq(
+				MAX_STAKE_AMOUNT
+			)
+
+			await expect(
+				stakingPoolInstance.connect(accounts[1]).unstake(stakeID)
+			)
+				.to.emit(stakingPoolInstance, 'UnstakeEvent')
+				.withArgs(accounts[1].address, stakeID)
+				.to.emit(tokenInstance, 'Transfer')
+				.withArgs(
+					stakingPoolInstance.getAddress(),
+					accounts[1].address,
+					'202500000000000000000000'
+				)
+
+			const balanceAfter = await tokenInstance.balanceOf(
+				accounts[1].address
+			)
+			expect(balance).to.eq(0)
+			expect(balanceAfter).to.eq('202500000000000000000000')
+			expect(
+				await stakingPoolInstance.getTotalStakedAccount(
+					accounts[1].address
+				)
+			).to.eq(0)
+			expect(await stakingPoolInstance.getTotalStakedPool()).to.eq(0)
+		})
+	})
 })

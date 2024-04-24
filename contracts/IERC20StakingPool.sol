@@ -28,7 +28,7 @@ interface IERC20StakingPool {
 	);
 
 	/// @notice Error to revert with when stake does not exist or was already claimed
-	error StakeClaimError(Stake stake);
+	error StakeClaimError();
 
 	/// @notice Error to send when trying to create a stake with wrong input
 	error StakingTierError();

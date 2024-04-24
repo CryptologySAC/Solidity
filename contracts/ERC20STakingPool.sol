@@ -356,7 +356,7 @@ contract ERC20StakingPool is
 
 		// Check if the stake exists and is not the default empty stake
 		if (stake.amount == 0) {
-			revert StakeClaimError(stake);
+			revert StakeClaimError();
 		}
 
 		// check if stake is still locked
@@ -371,15 +371,17 @@ contract ERC20StakingPool is
 			);
 		}
 
-		// Remove stake from the user
-		delete userStakes[msg.sender][_stakeID];
-		userTotalStaked[msg.sender] -= stake.amount;
-
 		// remove amount from the pool
 		totalStakedPool -= stake.amount;
+		userTotalStaked[msg.sender] -= stake.amount;
+
+		// Calculate stake + rewards
+		uint256 amountRewards = stake.amount + stake.rewards;
+
+		// Remove stake from the user
+		delete userStakes[msg.sender][_stakeID];
 
 		// transfer funds to user
-		uint256 amountRewards = stake.amount + stake.rewards;
 		safeToken.safeTransfer(msg.sender, amountRewards);
 
 		emit UnstakeEvent(msg.sender, _stakeID);
